@@ -2,7 +2,6 @@
 
 
 
-
 import subprocess
 import include.PySimpleGUI as sg
 import os, shutil
@@ -20,31 +19,47 @@ musicDir = os.path.join(mainDir, "music")
 sdlAppName = ""
 
 
-# URLS and download progress indicators
+# URLS, group into folder option
 urls = []
+
+
+groupFolder = {
+    "PromptStatus": "None",
+    "Name": ""
+}
 
 
 # read config and assign variables for location and filename of SpotDL
 f = open(cfgDir + "/cfg.txt", "r").read().split('\n')
 sdlAppName = "/" + f[1]
-
 print("Directory: " + sdlDirectory + "\nSpotDL Name: " + sdlAppName)
+
+
+
+
+class songItem:
+    id = 0
+    url = ""
+    selected = False
+
+    def __repr__(self):
+        return str(self.id) + ". " + self.url
+
 
 
 
 # main window layout
 layout = [
     [sg.Listbox(urls, size=(50,7), key="-LIST-")],
-    [sg.Text("Enter URL(s) below."), sg.Push(), sg.Button("Clear All", key="-CLRALL-", size=(6,1), font=("Arial"))],
-    [sg.Input(size=(30,5), key="-URL-"), sg.Button("+", key="-ADD-", font=("Arial", 12, "bold"), size=(5,1))],
-    [sg.Button("Download Tracks", size=(40,15), key="-DL-")]
+    [sg.Checkbox("Group tracks into folder.", False, key="-GRP-"), sg.Push(), sg.Button("Clear All", key="-CLRALL-", size=(6,1), font=("Arial"))],
+    [sg.Text("Enter song title or URL(s) below."), sg.Push() ],
+    [sg.Input(size=(33,5), key="-URL-"), sg.Push(), sg.Button("+", key="-ADD-", font=("Arial", 12, "bold"), size=(2,1))],
+    [sg.Button("Download Tracks", size=(40,2), key="-DL-")]
 ]
 
 
 # create main window
-window = sg.Window('SpotDL-UI', layout, size=(320,240))
-
-
+window = sg.Window('SpotDL-UI', layout, size=(320,275))
 
 
 def moveTracks():
@@ -61,16 +76,25 @@ def moveTracks():
                 old_fdir = os.path.join(root, f)
                 new_fdir = os.path.join(musicDir)
 
-                shutil.move(old_fdir, new_fdir + "/" + f) # move song to music folder
+                if groupFolder["PromptStatus"] == "entered":
+
+                    myCreatedFolder = os.path.join(musicDir, groupFolder["Name"])
+                    if not os.path.exists(myCreatedFolder): # prevent File Exists error
+                        os.mkdir(myCreatedFolder)
+
+                    shutil.move(old_fdir, myCreatedFolder + "/" + f) # move song to group folder
+
+                else:
+                    shutil.move(old_fdir, new_fdir + "/" + f) # move song to music folder
                 
+
     return movedFiles
 
 
 
 
 while True: # The Event Loop
-    event, values = window.read()      
-
+    event, values = window.read()  
 
     # program end event
     if event == sg.WIN_CLOSED or event == 'Exit':
@@ -83,26 +107,55 @@ while True: # The Event Loop
         window["-LIST-"].update(urls)
 
 
+    elif event == "-GRPSKIP-":
+        if winPromptFolderName:
+            winPromptFolderName.close()
+
+
     # add to URL list
     elif event == "-ADD-":
 
-        urls.append(values["-URL-"])
+        track = songItem()
+        track.id = len(urls)+1
+        track.url = values["-URL-"]
+        urls.append(track)
+
+        #urls.append(values["-URL-"])
 
         window["-LIST-"].update(urls)
         window["-URL-"].update(value="")
 
         print("Track list: " + str(len(urls)))
 
-
     # begin downloading
     elif event == "-DL-":
+
+
+        # if user chose to group songs into a folder, ask for folder name.
+        if values["-GRP-"] == True:
+            
+            folderNamePrompt = sg.popup_get_text("You chose to group tracks into a folder. Enter folder name.")
+            groupFolder["PromptStatus"] = "awaiting"
+
+            # get folder name or indicate that user changed their mind.
+            while (groupFolder["PromptStatus"] == "awaiting"):
+                if folderNamePrompt:
+                    # user entered folder name. Keep it somewhere for now.
+                    groupFolder["PromptStatus"] = "entered"
+                    groupFolder["Name"] = folderNamePrompt
+                else:
+                    # user did not want to create folder.
+                    groupFolder["PromptStatus"] = "cancelled"
+
 
         numFilesToDownload = len(urls)
         window["-DL-"].Update("Downloading...")
 
+
         for u in urls:
             os.chdir(mainDir)
-            subprocess.run([sdlDirectory + sdlAppName, u]) # run spotdl with url as argument
+            subprocess.run([sdlDirectory + sdlAppName, u.url]) # run spotdl with url as argument
+
 
         numTransfered = moveTracks()
 
