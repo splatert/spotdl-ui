@@ -1,7 +1,9 @@
 # SpotDL-UI
 Simple UI frontend for SpotDL
 
-![Screenshot_2023-11-17_16-47-39](https://github.com/splatert/spotdl-ui/assets/82643571/2efb916d-b7b6-4227-8953-82146289f220)
+![image](https://github.com/splatert/spotdl-ui/assets/82643571/3c9fddee-d91a-438e-8588-5d9d4523afe1)
+
+
 
 
 ### Requirements
