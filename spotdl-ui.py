@@ -32,7 +32,7 @@ groupFolder = {
 # read config and assign variables for location and filename of SpotDL
 f = open(cfgDir + "/cfg.txt", "r").read().split('\n')
 sdlAppName = "/" + f[1]
-print("Directory: " + sdlDirectory + "\nSpotDL Name: " + sdlAppName)
+print("Directory: " + sdlDirectory + "\nSpotDL Name: " + sdlAppName + "\n")
 
 
 
@@ -44,7 +44,6 @@ class songItem:
 
     def __repr__(self):
         return str(self.id) + ". " + self.url
-
 
 
 
@@ -78,6 +77,8 @@ def moveTracks():
 
                 if groupFolder["PromptStatus"] == "entered":
 
+                    #print("Packing tracks into folder...")
+
                     myCreatedFolder = os.path.join(musicDir, groupFolder["Name"])
                     if not os.path.exists(myCreatedFolder): # prevent File Exists error
                         os.mkdir(myCreatedFolder)
@@ -93,6 +94,12 @@ def moveTracks():
 
 
 
+dlProgress = {
+    "currentTrack": 0,
+    "numTracks": 0
+}
+
+
 while True: # The Event Loop
     event, values = window.read()  
 
@@ -105,6 +112,7 @@ while True: # The Event Loop
     elif event == "-CLRALL-":
         urls.clear()
         window["-LIST-"].update(urls)
+        print("Cleared tracklist.")
 
 
     elif event == "-GRPSKIP-":
@@ -120,12 +128,12 @@ while True: # The Event Loop
         track.url = values["-URL-"]
         urls.append(track)
 
-        #urls.append(values["-URL-"])
+        print("Added track. (" + track.url + ")")
 
         window["-LIST-"].update(urls)
         window["-URL-"].update(value="")
 
-        print("Track list: " + str(len(urls)))
+        #print("Track list: " + str(len(urls)))
 
     # begin downloading
     elif event == "-DL-":
@@ -152,18 +160,30 @@ while True: # The Event Loop
         window["-DL-"].Update("Downloading...")
 
 
+        dlProgress["currentTrack"] = 1
+        dlProgress["numTracks"] = len(urls)
+        
+        print("\n")
+
+
         for u in urls:
+
+            print("Downloading... (" + str(dlProgress["currentTrack"]) + " / " + str(dlProgress["numTracks"]) + ")")
+
             os.chdir(mainDir)
             subprocess.run([sdlDirectory + sdlAppName, u.url]) # run spotdl with url as argument
+
+            dlProgress["currentTrack"] += 1
 
 
         numTransfered = moveTracks()
 
         # displays incorrect file count for some reason so I disabled this function and used the one below..
-        #resultsWindow = sg.popup_ok("Tracks downloaded: " + str(numTransfered) + "/" + str(numFilesToDownload), "You can find them at the music folder.")
+        #resultsWindow = sg.popup_ok("Tracks downloaded: " + str(numTransfered) + "/" + str(numFilesToDownload), "You can find them in the music folder.")
         
         # show download results.
-        resultsWindow = sg.popup_ok("Your tracks have been downloaded.", "You can find them at the music folder.")
+        resultsWindow = sg.popup_ok("Your tracks have been downloaded.", "You can find them in the music folder.")
+        print("\nThank you for using spotDL-UI.\nYour tracks can be found in spotdl-ui/music.")
 
         # restore download button text
         window["-DL-"].Update("Download Tracks")
