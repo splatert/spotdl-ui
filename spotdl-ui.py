@@ -100,6 +100,20 @@ dlProgress = {
 }
 
 
+
+def UrlExists(u):
+
+    exists = False
+
+    for track in urls:
+        if track.url == u:
+            exists = True
+    
+    return exists
+            
+
+
+
 while True: # The Event Loop
     event, values = window.read()  
 
@@ -123,17 +137,22 @@ while True: # The Event Loop
     # add to URL list
     elif event == "-ADD-":
 
-        track = songItem()
-        track.id = len(urls)+1
-        track.url = values["-URL-"]
-        urls.append(track)
+        trackExists = UrlExists(values["-URL-"])
+        if trackExists:
+            trackExistsErr = sg.popup_ok("Error", "You already added this track.")
+            print("You already added this track. (" + track.url + ")")
+        else:
+            track = songItem()
+            track.id = len(urls)+1
+            track.url = values["-URL-"]
+            urls.append(track)
 
-        print("Added track. (" + track.url + ")")
+            print("Added track. (" + track.url + ")")
 
-        window["-LIST-"].update(urls)
-        window["-URL-"].update(value="")
+            window["-LIST-"].update(urls)
+            window["-URL-"].update(value="")
 
-        #print("Track list: " + str(len(urls)))
+        
 
     # begin downloading
     elif event == "-DL-":
